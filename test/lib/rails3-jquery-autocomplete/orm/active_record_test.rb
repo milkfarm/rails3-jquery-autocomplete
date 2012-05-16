@@ -81,6 +81,24 @@ module Rails3JQueryAutocomplete
         end
       end
 
+      context '#get_autocomplete_term_for_like' do
+        setup do
+          @term = 'query'
+          @options = {}
+        end
+
+          should 'return term with % added' do
+            assert_equal "query%", get_autocomplete_term_for_like(@term, @options)
+          end
+
+        context 'full search' do
+          should 'return term sourrounded by %%' do
+            @options[:full] = true
+            assert_equal "%query%", get_autocomplete_term_for_like(@term, @options)
+          end
+        end
+      end
+
       context '#get_autocomplete_where_clause' do
         setup do
           @model = Object.new
