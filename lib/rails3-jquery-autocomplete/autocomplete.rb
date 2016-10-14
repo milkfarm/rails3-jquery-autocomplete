@@ -3,13 +3,10 @@ module Rails3JQueryAutocomplete
     def self.included(target)
       target.extend Rails3JQueryAutocomplete::Autocomplete::ClassMethods
 
-      if defined?(Mongoid::Document)
-        target.send :include, Rails3JQueryAutocomplete::Orm::Mongoid
-      elsif defined?(MongoMapper::Document)
-        target.send :include, Rails3JQueryAutocomplete::Orm::MongoMapper
-      else
-        target.send :include, Rails3JQueryAutocomplete::Orm::ActiveRecord
-      end
+      target.send :include, Rails3JQueryAutocomplete::Orm::Mongoid if defined?(Mongoid::Document)
+      target.send :include, Rails3JQueryAutocomplete::Orm::MongoMapper if defined?(MongoMapper::Document)
+      target.send :include, Rails3JQueryAutocomplete::Orm::ActiveRecord
+
     end
 
     #
@@ -41,7 +38,25 @@ module Rails3JQueryAutocomplete
     # end
     #
     module ClassMethods
-      def autocomplete(object, method, options = {})
+      def autocomplete(object, method, options = {}, &block)
+
+        define_method("get_prefix") do |model|
+          if defined?(Mongoid::Document) && model.include?(Mongoid::Document)
+            'mongoid'
+          elsif defined?(MongoMapper::Document) && model.include?(MongoMapper::Document)
+            'mongo_mapper'
+          else
+            'active_record'
+          end
+        end
+        define_method("get_autocomplete_order") do |method, options, model=nil|
+          method("#{get_prefix(get_object(options[:class_name] || object))}_get_autocomplete_order").call(method, options, model)
+        end
+
+        define_method("get_autocomplete_items") do |parameters|
+          method("#{get_prefix(get_object(options[:class_name] || object))}_get_autocomplete_items").call(parameters)
+        end
+
         define_method("autocomplete_#{object}_#{method}") do
 
           method = options[:column_name] if options.has_key?(:column_name)
@@ -57,7 +72,7 @@ module Rails3JQueryAutocomplete
             items = {}
           end
 
-          render :json => json_for_autocomplete(items, options[:display_value] ||= method, options[:extra_data])
+          render :json => json_for_autocomplete(items, options[:display_value] ||= method, options[:extra_data], &block), root: false
         end
       end
     end
@@ -82,13 +97,18 @@ module Rails3JQueryAutocomplete
     # Hash also includes a key/value pair for each method in extra_data
     #
     def json_for_autocomplete(items, method, extra_data=[])
-      items.collect do |item|
+      items = items.collect do |item|
         hash = {"id" => item.id.to_s, "label" => item.send(method), "value" => item.send(method)}
         extra_data.each do |datum|
           hash[datum] = item.send(datum)
         end if extra_data
         # TODO: Come back to remove this if clause when test suite is better
         hash
+      end
+      if block_given?
+        yield(items)
+      else 
+        items
       end
     end
   end

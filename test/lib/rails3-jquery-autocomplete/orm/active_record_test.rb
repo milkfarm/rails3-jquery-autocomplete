@@ -8,26 +8,26 @@ module Rails3JQueryAutocomplete
       context "#get_autocomplete_order" do
         context 'order is specified' do
           should 'returns that order option' do
-            assert_equal "field ASC", get_autocomplete_order(:field, {:order => 'field ASC'})
+            assert_equal "field ASC", active_record_get_autocomplete_order(:field, {:order => 'field ASC'})
           end
         end
 
         context 'no order is specified' do
-          should 'return the order clause by the field ASC' do
-            assert_equal "field ASC", get_autocomplete_order(:field, {})
+          should 'return the order clause by the LOWER(table_name.field) ASC' do
+            assert_equal "LOWER(field) ASC", active_record_get_autocomplete_order(:field, {})
           end
 
           context 'a different model is specified' do
-            should 'return the order clause by the table_name.field ASC' do
+            should 'return the order clause by the LOWER(table_name.field) ASC' do
               model = Object.new
               mock(model).table_name { 'table_name' }
-              assert_equal "table_name.field ASC", get_autocomplete_order(:field, {}, model)
+              assert_equal "LOWER(table_name.field) ASC", active_record_get_autocomplete_order(:field, {}, model)
             end
           end
         end
       end
 
-      context '#get_autocomplete_items' do
+      context '#active_record_get_autocomplete_items' do
         should 'retrieve the items from ActiveRecord' do
           class Dog ; end
 
@@ -45,7 +45,7 @@ module Rails3JQueryAutocomplete
           }
 
           mock(self).get_autocomplete_limit(anything) { 10 }
-          mock(self).get_autocomplete_order(anything, anything, anything) { "order ASC" }
+          mock(self).active_record_get_autocomplete_order(anything, anything, anything) { "order ASC" }
           mock(self).get_autocomplete_select_clause(model, method, {}) { ["field"] }
           mock(self).get_autocomplete_where_clause(model, term, method, {}) { ["WHERE something"] }
           mock(model).table_name.times(any_times) { 'model_table_name' }
@@ -55,7 +55,38 @@ module Rails3JQueryAutocomplete
           mock(model).where(["WHERE something"]).mock!.limit(10).mock!.
               order("order ASC") { 1 }
 
-          assert_equal 1, get_autocomplete_items(options)
+          assert_equal 1, active_record_get_autocomplete_items(options)
+        end
+
+        should 'use hstore method if present' do
+          class Dog ; end
+
+          model = Dog
+          scoped = []
+          whered = []
+          term = 'query'
+          method = :field
+          hsmethod = :hsfield
+
+          options = {
+            :model => model,
+            :term => term,
+            :method => method,
+            :options => {hstore: {method: hsmethod}}
+          }
+
+          mock(self).get_autocomplete_limit(anything) { 10 }
+          mock(self).active_record_get_autocomplete_order(anything, anything, anything) { "order ASC" }
+          mock(self).get_autocomplete_select_clause(model, hsmethod, options[:options]) { ["hsfield"] }
+          mock(self).get_autocomplete_where_clause(model, term, hsmethod, options[:options]) { ["WHERE something"] }
+          mock(model).table_name.times(any_times) { 'model_table_name' }
+
+          mock(model).scoped { model }
+          mock(model).select(["hsfield"]) { model }
+          mock(model).where(["WHERE something"]).mock!.limit(10).mock!.
+              order("order ASC") { 1 }
+
+          assert_equal 1, active_record_get_autocomplete_items(options)
         end
       end
 
@@ -69,6 +100,11 @@ module Rails3JQueryAutocomplete
         should 'create a select clause' do
           assert_equal ["table_name.id", "table_name.method"],
               get_autocomplete_select_clause(@model, :method, {})
+        end
+
+        should 'create a select clause with hstore method' do
+          assert_equal ["table_name.id", "table_name.hsmethod"],
+              get_autocomplete_select_clause(@model, :hsmethod, {hstore: {method: :hsmethod}})
         end
 
         context 'with extra options' do
@@ -120,6 +156,15 @@ module Rails3JQueryAutocomplete
           should 'return options for where with ILIKE' do
             mock(self).postgres?(@model) { true }
             assert_equal ["LOWER(table_name.method) ILIKE ?", "query%"], get_autocomplete_where_clause(@model, @term, @method, @options)
+          end
+        end
+
+        context 'HStore' do
+          should 'return options for where from hstore options' do
+            mock(self).postgres?(@model) { true }
+            @options[:hstore] = {method: :hsmethod, key: :hskey}
+            @method = :hsmethod
+            assert_equal ["LOWER(table_name.hsmethod -> 'hskey') LIKE ?", "query%"], get_autocomplete_where_clause(@model, @term, @method, @options)
           end
         end
 

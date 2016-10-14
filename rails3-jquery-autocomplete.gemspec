@@ -6,14 +6,14 @@ Gem::Specification.new do |s|
   s.name = %q{rails3-jquery-autocomplete}
   s.version = Rails3JQueryAutocomplete::VERSION
   s.platform = Gem::Platform::RUBY
-  s.authors = ["David Padilla"]
-  s.email = %q{david.padilla@crowdint.com}
+  s.authors = ["David Padilla", "Joiey Seeley", "Manu S Ajith"]
+  s.email = %q{david.padilla@crowdint.com joiey.seeley@gmail.com neo@codingarena.in}
   s.homepage = %q{http://github.com/crowdint/rails3-jquery-autocomplete}
   s.summary = %q{Use jQuery's autocomplete plugin with Rails 3.}
   s.description = %q{Use jQuery's autocomplete plugin with Rails 3.}
   s.license = %q{MIT}
 
-  s.add_dependency('rails', '~>3.0')
+  s.add_dependency('rails', '>= 3.2')
 
   s.add_development_dependency 'sqlite3-ruby'
   s.add_development_dependency 'mongoid',      '>= 2.0.0'

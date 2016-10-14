@@ -1,5 +1,10 @@
+## INTELLIJ/RubyMine
+.idea/*
+.idea/**/*
+
 ## MAC OS
 .DS_Store
+.idea
 
 ## TEXTMATE
 *.tmproj
@@ -12,6 +17,7 @@ tmtags
 
 ## VIM
 *.swp
+*.swo
 
 ## PROJECT::GENERAL
 coverage
@@ -24,3 +30,9 @@ tmp
 .rvmrc
 .gemrc
 Gemfile.lock
+
+tags
+rails3-jquery-autocomplete-*.gem
+
+.ruby-gemset
+.ruby-version

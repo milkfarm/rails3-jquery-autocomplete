@@ -1,6 +1,12 @@
+# Project Moved
+
+There has been some confusion around the naming as to where to find the Rails4 version of this gem due to the original naming.  With the latest release I have taken the opportunity to address this by moving the official repo.
+
+The official repo is now located at [rails-jquery-autocomplete](http://github.com/bigtunacan/rails-jquery-autocomplete)
+
 # rails3-jquery-autocomplete
 
-[![Build Status](https://secure.travis-ci.org/crowdint/rails3-jquery-autocomplete.png)](http://travis-ci.org/crowdint/rails3-jquery-autocomplete)
+[![Build Status](https://secure.travis-ci.org/crowdint/rails3-jquery-autocomplete.png)](http://travis-ci.org/crowdint/rails3-jquery-autocomplete) [![Gem Version](https://badge.fury.io/rb/rails3-jquery-autocomplete.png)](http://badge.fury.io/rb/rails3-jquery-autocomplete)
 
 An easy way to use jQuery's autocomplete with Rails 3.
 
@@ -67,7 +73,7 @@ uncompressed version by running:
 
     rails generate autocomplete:uncompressed
 
-### Rails 3.1.x
+### Rails 3.1.x and higher
 
 Just add it to your app/assets/javascripts/application.js file
 
@@ -126,6 +132,10 @@ Only the following terms mould match the query 'un':
 
 * Unacceptable
 
+#### :limit => 10 (default behavior)
+
+By default your search result set is limited to the first 10 records. This can be overridden by specifying the limit option.
+
 #### :extra_data
 
 By default, your search will only return the required columns from the database needed to populate your form, namely id and the column you are searching (name, in the above example).
@@ -158,6 +168,14 @@ In the example above, you will search by _name_, but the autocomplete list will 
 This wouldn't really make much sense unless you use it with the "id_element" attribute. (See below)
 
 Only the object's id and the column you are searching on will be returned in JSON, so if your display_value method requires another parameter, make sure to fetch it with the :extra_data option
+
+#### :hstore
+
+  Added option to support searching in hstore columns.
+
+  Pass a hash with two keys: `:method` and `:key` with values: the hstore field name and the key of the hstore to search.
+
+  e.g `autocomplete :feature, :name, :hstore => {:method => 'name_translations', :key => 'en'}`
 
 
 #### :scopes
@@ -202,11 +220,20 @@ If you are not using a FormBuilder (form_for) or you just want to include an aut
 To generate an autocomplete input field that accepts multiple values separated by a given delimiter, add the `'data-delimiter'` and `:multiple` options:
 
     form_for @product do |f|
-      f.autocomplete_field :brand_names, autocomplete_brand_name_products_path, 
+      f.autocomplete_field :brand_names, autocomplete_brand_name_products_path,
       'data-delimiter' => ',', :multiple => true
     end
 
 NOTE: Setting the `:multiple` option to `true` will result in the chosen values being submitted as an array. Leaving this option off will result in the values being passed as a single string, with the values separated by your chosen delimiter.
+
+#### Automatically focus on the first autocompleted item
+
+To have the first item be automatically focused on when the autocomplete menu is shown, add the `'data-auto-focus'` option and set it to `true`.
+
+	form_for @product do |f|
+		f.autocomplete_field :brand_names, autocomplete_brand_name_products_path,
+		'data-auto-focus' => true
+	end
 
 Now your autocomplete code is unobtrusive, Rails 3 style.
 
@@ -217,6 +244,39 @@ If you need to use the id of the selected object, you can use the *id_element* a
     f.autocomplete_field :brand_name, autocomplete_brand_name_products_path, :id_element => '#some_element'
 
 This will update the field with id *#some_element with the id of the selected object. The value for this option can be any jQuery selector.
+
+### Changing destination element
+
+If you need to change destination element where the autocomplete box will be appended to, you can use the **:append_to** option which generates a **data-append-to** HTML attribute that is used in jQuery autocomplete as append_to attribute.
+
+The :append_to option accepts a string containing jQuery selector for destination element:
+
+    f.autocomplete_field :product_name, '/products/autocomplete_product_name', :append_to => "#product_modal"
+
+The previous example would append the autocomplete box containing suggestions to element jQuery('#product_modal'). 
+This is very useful on page where you use various z-indexes and you need to append the box to the topmost element, for example using modal window.
+
+### Sending extra search fields
+
+If you want to send extra fields from your form to the search action,
+you can use the **:fields** options which generates a **data-autocomplete-fields**
+HTML attribute.
+
+The :fields option accepts a hash where the keys represent the Ajax request
+parameter name and the values represent the jQuery selectors to retrieve the
+form elements to get the values:
+
+    f.autocomplete_field :product_name, '/products/autocomplete_product_name', :fields => {:brand_id => '#brand_element', :country => '#country_element'}
+
+    class ProductsController < Admin::BaseController
+      def autocomplete_product_name
+        term = params[:term]
+        brand_id = params[:brand_id]
+        country = params[:country]
+        products = Product.where('brand = ? AND country = ? AND name LIKE ?', brand_id, country, "%#{term}%").order(:name).all
+        render :json => products.map { |product| {:id => product.id, :label => product.name, :value => product.name} }
+      end
+    end
 
 ### Getting extra object data
 
@@ -339,7 +399,7 @@ while you're developing, it is recommended that you run
 
     bundle exec guard
 
-to have the relevent test run every time you save a file.
+to have the relevant test run every time you save a file.
 
 ## Integration tests
 
@@ -357,7 +417,7 @@ integration folder:
 
 ## Where to test what
 
-If you're making or tweaking a plugin (such as the formastic plugin or
+If you're making or tweaking a plugin (such as the formtastic plugin or
 simple\_form plugin), check out the simple\_form\_plugin\_test for an
 example of how to test it as part of the main `rake test` run.
 Historically, plugins like these had been tested (shoddily) as part of
