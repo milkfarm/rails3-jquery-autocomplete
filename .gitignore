@@ -22,5 +22,7 @@ tmp
 ## PROJECT::SPECIFIC
 .bundle
 .rvmrc
+.ruby-gemset
+.ruby-version
 .gemrc
 Gemfile.lock
